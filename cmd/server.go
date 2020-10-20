@@ -12,15 +12,19 @@ import (
 )
 
 const (
-	port    = 8080
 	timeout = 2 * time.Second
+	port    = 8080
 )
 
 func main() {
 	slackToken := os.Getenv("SLACK_TOKEN")
+
+	if slackToken == "" {
+		log.Fatal("SLACK_TOKEN environment variable not set, exiting.")
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/invite", invite(slackToken))
-	mux.HandleFunc("/ping", ping)
 
 	s := http.Server{
 		Addr:              fmt.Sprintf(":%d", port),
@@ -30,11 +34,10 @@ func main() {
 		IdleTimeout:       timeout,
 		ReadHeaderTimeout: timeout,
 	}
-	log.Fatal(s.ListenAndServe())
-}
 
-func ping(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "pong")
+	log.Info("Serving on :", port)
+
+	log.Fatal(s.ListenAndServe())
 }
 
 func invite(slackToken string) http.HandlerFunc {
@@ -68,25 +71,30 @@ func invite(slackToken string) http.HandlerFunc {
 
 		if err != nil {
 			fmt.Fprintf(w, "decode slack response failed")
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		if data["ok"] == false {
 			if data["error"].(string) == "already_invited" || data["error"].(string) == "already_in_team" {
-				log.Infof("Success! You were already invited.\n")
+				fmt.Fprintf(w, "Success! You were already invited.\n")
+				w.WriteHeader(http.StatusOK)
 				return
 			} else if data["error"].(string) == "invalid_email" {
-				log.Infof("The email you entered is an invalid email.\n")
+				fmt.Fprintf(w, "The email you entered is an invalid email.\n")
+				w.WriteHeader(http.StatusBadRequest)
 				return
 			} else if data["error"].(string) == "invalid_auth" {
-				log.Infof("Invalid auth: Something has gone wrong. Please contact a system administrator.\n")
+				fmt.Fprintf(w, "Invalid auth: Something has gone wrong. Please contact a system administrator.\n")
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			log.Infof("Catch all: Something has gone wrong. Please contact a system administrator.\n")
+			fmt.Fprintf(w, "Catch all: Something has gone wrong. Please contact a system administrator.\n")
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		log.Infof("Success! Check “%s“ for an invite from Slack.\n", email)
+		fmt.Fprintf(w, "Success! Check “%s“ for an invite from Slack.\n", email)
 		w.WriteHeader(http.StatusOK)
 	}
 }

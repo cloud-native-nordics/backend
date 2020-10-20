@@ -6,10 +6,15 @@ WORKDIR /app
 # calls to HTTPS endpoints.
 RUN apk add --no-cache ca-certificates
 
-COPY server.go go.mod go.sum /app/
+# handle dependencies
+COPY go.mod go.sum /app/
 RUN go mod download
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o server server.go
+# copy go files
+COPY cmd/ /app/cmd/
+
+# compile
+RUN CGO_ENABLED=0 GOOS=linux go build -o server cmd/*
 
 FROM scratch
 
