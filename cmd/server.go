@@ -92,7 +92,7 @@ func invite(slackToken string) http.HandlerFunc {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			} else if data["error"].(string) == "invalid_auth" {
-				log.Warning("Invite failed: Invalid auth: is the SLACK_TOKEN environment variable correct?")
+				log.Warning("Invite failed: Invalid auth, is the SLACK_TOKEN environment variable correct?")
 				fmt.Fprintf(w, "Invalid auth: Something has gone wrong. Please contact a system administrator.\n")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
