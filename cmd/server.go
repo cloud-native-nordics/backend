@@ -42,6 +42,8 @@ func main() {
 
 func invite(slackToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
 		values := r.URL.Query()
 		email := values.Get("email")
 
